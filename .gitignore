@@ -1,0 +1,3 @@
+.env
+api/swagger_client
+__pycache__

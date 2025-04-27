@@ -1,0 +1,16 @@
+{
+    "name": "Python TensorFlow Dev Container",
+    "image": "mcr.microsoft.com/devcontainers/typescript-node:22-bookworm", 
+    
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "burkeholland.simple-react-snippets",
+                "github.copilot",
+                "msjsdiag.vscode-react-native",
+                "SonarSource.sonarlint-vscode",
+            ]
+        }
+    }
+   
+}

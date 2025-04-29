@@ -2,15 +2,17 @@ from fastapi import FastAPI
 from fastapi.responses import JSONResponse, RedirectResponse
 from pydantic import BaseModel
 from swagger_client.rest import ApiException
-from swagger_client import AthletesApi, configuration
+from swagger_client import AthletesApi, Configuration, ApiClient
 from pprint import pprint
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException
 from dotenv import load_dotenv
 import os
 from fastapi.security import OAuth2, OAuth2AuthorizationCodeBearer
 from fastapi.openapi.models import OAuthFlows as OAuthFlowsModel
 from fastapi.openapi.models import OAuthFlowAuthorizationCode
 from typing import Annotated
+from datetime import datetime
+from fastapi.encoders import jsonable_encoder
 
 
 # Load environment variables from .env file
@@ -27,13 +29,16 @@ if not strava_client_id or not strava_client_secret:
     raise RuntimeError("Missing Strava client ID or secret in environment variables.")
 
 # Configure OAuth2 access token for authorization: strava_oauth
-configuration.access_token = None
+configuration = Configuration()
+configuration.access_token = ""
+configuration.logger_file = "strava.log"
+configuration.debug = True
 
 oauth2_scheme = OAuth2AuthorizationCodeBearer(authorizationUrl="token", tokenUrl="token")
 
 strava_authorization_url="https://www.strava.com/oauth/authorize"
 strava_token_url="https://www.strava.com/oauth/token"
-strava_redirect_uri="http://localhost:8000d/callback"
+strava_redirect_uri="http://localhost:8000/callback"
 strava_api_url="https://www.strava.com/api/v3"
 
 # Define OAuth2 flow for Strava
@@ -64,20 +69,29 @@ def read_root():
     return {"message": "Hello, World!"}
 
 @app.get("/athlete", response_model=AthleteResponse)
-def get_authenticated_athlete(token: Annotated[str, Depends(oauth2_scheme)]):
-    api_instance = AthletesApi()
+def get_authenticated_athlete():
+    api_client = ApiClient(configuration) 
+    print("Access token:", configuration.access_token)
+    api_instance = AthletesApi(api_client) 
+    # api_instance.api_client.configuration.access_token = configuration.access_token
     try:
         # Get Authenticated Athlete
         api_response = api_instance.get_logged_in_athlete()
         pprint(api_response)
-        return JSONResponse(content=api_response.to_dict())
+        # Serialize the response to handle datetime objects
+        serialized_response = jsonable_encoder(api_response.to_dict())
+        return JSONResponse(content=serialized_response)
     except ApiException as e:
         return JSONResponse(content={"error": f"Exception when calling AthletesApi->getLoggedInAthlete: {e}"}, status_code=500)
 
 @app.get("/callback")
-def strava_callback(code: str):
+def strava_callback(code: str, state: str, scope: str):
     """Handle the OAuth2 callback from Strava."""
     import requests
+
+    print(f"Received code: {code}")
+    print(f"Received state: {state}")
+    print(f"Received scope: {scope}")
 
     # Exchange the authorization code for an access token
     response = requests.post(
@@ -98,6 +112,7 @@ def strava_callback(code: str):
 
     token_data = response.json()
     configuration.access_token = token_data.get("access_token")
+    print(f"Access token: {configuration.access_token}")
 
     return {"message": "Authentication successful", "token_data": token_data}
 

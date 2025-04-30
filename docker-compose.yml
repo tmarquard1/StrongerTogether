@@ -15,5 +15,5 @@ services:
     image: swaggerapi/swagger-codegen-cli-v3
     container_name: swagger_codegen
     volumes:
-      - ./api/StravaPythonClient:/output
+      - StravaPythonClient:/output
     command: generate -i https://developers.strava.com/swagger/swagger.json -l python -o /output

@@ -1,8 +1,8 @@
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse, RedirectResponse
-from pydantic import BaseModel
 from swagger_client.rest import ApiException
-from swagger_client import AthletesApi, Configuration, ApiClient
+from swagger_client import AthletesApi, Configuration, ApiClient, ActivitiesApi
+from models import AthleteResponse
 from pprint import pprint
 from fastapi import Depends, HTTPException
 from dotenv import load_dotenv
@@ -11,15 +11,19 @@ from fastapi.security import OAuth2, OAuth2AuthorizationCodeBearer
 from fastapi.openapi.models import OAuthFlows as OAuthFlowsModel
 from fastapi.openapi.models import OAuthFlowAuthorizationCode
 from typing import Annotated
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from fastapi.encoders import jsonable_encoder
-
+from sqlalchemy.orm import Session
+from database.connection import engine, get_db
+from database.models.activities import Base
+from database.models.activities import Activity, ActivityCreate
 
 # Load environment variables from .env file
 load_dotenv()
 app = FastAPI()
 
-
+# Create all tables if they do not exist
+Base.metadata.create_all(bind=engine)
 
 # Retrieve Strava client ID and secret from environment variables
 strava_client_id = os.getenv("strava_client_id")
@@ -50,20 +54,6 @@ strava_oauth_flow = OAuthFlowAuthorizationCode(
 strava_oauth2_scheme = OAuth2(flows=OAuthFlowsModel(authorizationCode=strava_oauth_flow))
 
 
-class AthleteResponse(BaseModel):
-    id: int
-    username: str
-    firstname: str
-    lastname: str
-    city: str
-    state: str
-    country: str
-    sex: str
-    premium: bool
-    summit: bool
-    created_at: str
-    updated_at: str
-
 @app.get("/")
 def read_root():
     return {"message": "Hello, World!"}
@@ -83,6 +73,27 @@ def get_authenticated_athlete():
         return JSONResponse(content=serialized_response)
     except ApiException as e:
         return JSONResponse(content={"error": f"Exception when calling AthletesApi->getLoggedInAthlete: {e}"}, status_code=500)
+
+@app.post("/futute_activity")
+def create_future_activity():
+    """Create a future activity."""
+
+    api_client = ApiClient(configuration)
+    api_instance = ActivitiesApi(api_client)
+    
+    api_instance.create_activity(
+        name="Morning Swim",
+        type="Swim",
+        sport_type="Swim",
+        start_date_local=(datetime.now() + timedelta(hours=12)).isoformat(),
+        elapsed_time=3600,
+        description="TBD",
+        distance=1000,
+        trainer=False,
+        commute=False,
+    )
+
+    return {"activity": "Future activity created successfully"}
 
 @app.get("/callback")
 def strava_callback(code: str, state: str, scope: str):
@@ -124,3 +135,18 @@ def authorize():
     return RedirectResponse(
         url=f"{strava_authorization_url}?client_id={strava_client_id}&redirect_uri={strava_redirect_uri}&response_type=code&scope=read"
     )
+
+
+####################### Supporting the Web Client before fully implementing Strava API #######################
+@app.post("/activity")
+def create_activity(activity: ActivityCreate, db: Session = Depends(get_db)):
+    """Create a new activity."""
+    new_activity = Activity(
+        name=activity.name,
+        description=activity.description,
+        timestamp=datetime.now(timezone.utc)
+    )
+    db.add(new_activity)
+    db.commit()
+    db.refresh(new_activity)
+    return {"message": "Activity created successfully", "activity": new_activity}

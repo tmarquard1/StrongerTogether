@@ -2,16 +2,17 @@
 import { useState } from "react";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
+import BASE_URL from "../utils/apiConfig";
 
 export default function CreateEvent() {
-  const [title, setTitle] = useState("");
+  const [name, setName] = useState("");
   const [description, setDescription] = useState("");
-  const [date, setDate] = useState<Date | null>(new Date());
+  const [timestamp, setTimestamp] = useState<Date | null>(new Date());
 
   const handleSave = async () => {
-    const eventData = { title, description, date };
+    const eventData = { name, description, timestamp };
     try {
-      const response = await fetch("/api/events", {
+      const response = await fetch(`${BASE_URL}/activity`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(eventData),
@@ -31,11 +32,11 @@ export default function CreateEvent() {
     <div className="p-4 max-w-md mx-auto">
       <h1 className="text-2xl font-bold mb-4">Create Event</h1>
       <div className="mb-4">
-        <label className="block text-sm font-medium mb-1">Title</label>
+        <label className="block text-sm font-medium mb-1">Name</label>
         <input
           type="text"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
+          value={name}
+          onChange={(e) => setName(e.target.value)}
           className="w-full px-3 py-2 border rounded"
         />
       </div>
@@ -50,8 +51,8 @@ export default function CreateEvent() {
       <div className="mb-4">
         <label className="block text-sm font-medium mb-1">Date and Time</label>
         <DatePicker
-          selected={date}
-          onChange={(date) => setDate(date)}
+          selected={timestamp}
+          onChange={(timestamp) => setTimestamp(timestamp)}
           showTimeSelect
           dateFormat="Pp"
           className="w-full px-3 py-2 border rounded"

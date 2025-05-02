@@ -18,6 +18,7 @@ class Activity(Base):
 class ActivityCreate(BaseModel):
     name: str
     description: str | None = None
+    timestamp: datetime | None = None
 
 class ActivityResponse(BaseModel):
     id: int

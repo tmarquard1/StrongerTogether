@@ -16,11 +16,20 @@ from fastapi.encoders import jsonable_encoder
 from sqlalchemy.orm import Session
 from database.connection import engine, get_db
 from database.models.activities import Base
-from database.models.activities import Activity, ActivityCreate
+from database.models.activities import Activity, ActivityCreate, ActivityResponse
+from fastapi.middleware.cors import CORSMiddleware
 
 # Load environment variables from .env file
 load_dotenv()
 app = FastAPI()
+# Add this after initializing the FastAPI app
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],  # Allow localhost origins
+    allow_credentials=True,
+    allow_methods=["*"],  # Allow all HTTP methods
+    allow_headers=["*"],  # Allow all headers
+)
 
 # Create all tables if they do not exist
 Base.metadata.create_all(bind=engine)
@@ -139,14 +148,14 @@ def authorize():
 
 ####################### Supporting the Web Client before fully implementing Strava API #######################
 @app.post("/activity")
-def create_activity(activity: ActivityCreate, db: Session = Depends(get_db)):
+def create_activity(activity: ActivityCreate, db: Session = Depends(get_db)) -> ActivityResponse:
     """Create a new activity."""
     new_activity = Activity(
         name=activity.name,
         description=activity.description,
-        timestamp=datetime.now(timezone.utc)
+        timestamp=activity.timestamp or datetime.now(timezone.utc),
     )
     db.add(new_activity)
     db.commit()
     db.refresh(new_activity)
-    return {"message": "Activity created successfully", "activity": new_activity}
+    return ActivityResponse.model_validate(new_activity)

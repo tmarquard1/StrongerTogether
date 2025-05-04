@@ -2,3 +2,5 @@
 api/swagger_client
 __pycache__
 strava.log
+.DS_Store
+.terraform

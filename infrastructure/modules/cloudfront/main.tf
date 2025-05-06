@@ -67,9 +67,6 @@ resource "aws_cloudfront_distribution" "cdn" {
     domain_name = aws_s3_bucket.origin_bucket.bucket_regional_domain_name
     origin_id   = "S3Origin"
     origin_access_control_id = aws_cloudfront_origin_access_control.default.id
-    # s3_origin_config {
-    #   origin_access_identity = aws_cloudfront_origin_access_identity.cdn_identity.id
-    # }
   }
 
   enabled             = true
@@ -90,8 +87,10 @@ resource "aws_cloudfront_distribution" "cdn" {
       cookies {
         forward = "none"
       }
-      # headers = ["Content-Type"]
+      headers = ["Content-Type"]
     }
+
+    compress = true
 
     min_ttl     = 0
     default_ttl = 86400

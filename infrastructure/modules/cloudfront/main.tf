@@ -33,7 +33,25 @@ data "aws_iam_policy_document" "s3_policy" {
 
 resource "aws_s3_bucket_policy" "origin_bucket_policy" {
   bucket = aws_s3_bucket.origin_bucket.id
-  policy = data.aws_iam_policy_document.s3_policy.json
+  policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [
+      {
+        Sid: "AllowCloudFrontServicePrincipalReadOnly",
+        Effect = "Allow",
+        Principal = {
+          Service = "cloudfront.amazonaws.com"
+        },
+        Action = "s3:GetObject",
+        Resource = "${aws_s3_bucket.origin_bucket.arn}/*",
+        Condition = {
+          StringEquals = {
+            "AWS:SourceArn" = "arn:aws:cloudfront:::distribution/${aws_cloudfront_distribution.cdn.id}"
+          }
+        }
+      }
+    ]
+  })
 }
 
 resource "aws_cloudfront_origin_access_control" "default" {
@@ -72,6 +90,7 @@ resource "aws_cloudfront_distribution" "cdn" {
       cookies {
         forward = "none"
       }
+      # headers = ["Content-Type"]
     }
 
     min_ttl     = 0

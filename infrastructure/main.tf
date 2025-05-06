@@ -1,5 +1,6 @@
 provider "aws" {
   region = var.region
+  
 }
 
 module "cloudfront" {

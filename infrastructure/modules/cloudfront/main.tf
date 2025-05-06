@@ -15,50 +15,48 @@ resource "aws_s3_object" "upload_files" {
   etag = filemd5("${var.upload_directory}/${each.value}")
 }
 
-# resource "aws_s3_bucket_acl" "b_acl" {
-#   bucket = aws_s3_bucket.origin_bucket.id
-#   acl    = "private"
-# }
+resource "aws_cloudfront_origin_access_identity" "cdn_identity" {
+  comment = "Origin Access Identity for CloudFront"
+}
+
+data "aws_iam_policy_document" "s3_policy" {
+  statement {
+    actions   = ["s3:GetObject"]
+    resources = ["${aws_s3_bucket.origin_bucket.arn}/*"]
+
+    principals {
+      type        = "AWS"
+      identifiers = [aws_cloudfront_origin_access_identity.cdn_identity.iam_arn]
+    }
+  }
+}
 
 resource "aws_s3_bucket_policy" "origin_bucket_policy" {
   bucket = aws_s3_bucket.origin_bucket.id
-
-  policy = jsonencode({
-    Version = "2012-10-17",
-    Statement = [
-      {
-        Sid: "AllowCloudFrontServicePrincipalReadOnly",
-        Effect = "Allow",
-        Principal = {
-          Service = "cloudfront.amazonaws.com"
-        },
-        Action = "s3:GetObject",
-        Resource = "${aws_s3_bucket.origin_bucket.arn}/*",
-        Condition = {
-          StringEquals = {
-            "AWS:SourceArn" = "arn:aws:cloudfront:::distribution/${aws_cloudfront_distribution.cdn.id}"
-          }
-        }
-      }
-    ]
-  })
+  policy = data.aws_iam_policy_document.s3_policy.json
 }
 
-resource "aws_cloudfront_origin_access_identity" "cdn_identity" {
-  comment = "Origin Access Identity for CloudFront"
+resource "aws_cloudfront_origin_access_control" "default" {
+  name                              = "default"
+  description                       = "Default Policy"
+  origin_access_control_origin_type = "s3"
+  signing_behavior                  = "always"
+  signing_protocol                  = "sigv4"
 }
 
 resource "aws_cloudfront_distribution" "cdn" {
   origin {
     domain_name = aws_s3_bucket.origin_bucket.bucket_regional_domain_name
     origin_id   = "S3Origin"
-    # origin_access_control_id = aws_cloudfront_origin_access_control.default.id
-    s3_origin_config {
-      origin_access_identity = aws_cloudfront_origin_access_identity.cdn_identity.id
-    }
+    origin_access_control_id = aws_cloudfront_origin_access_control.default.id
+    # s3_origin_config {
+    #   origin_access_identity = aws_cloudfront_origin_access_identity.cdn_identity.id
+    # }
   }
 
   enabled             = true
+  is_ipv6_enabled     = true
+  comment             = "Some comment"
   default_root_object = "index.html"
 
   default_cache_behavior {

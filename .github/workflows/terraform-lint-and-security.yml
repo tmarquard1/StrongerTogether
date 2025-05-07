@@ -1,0 +1,40 @@
+# Add a GitHub Actions workflow for tflint and tfsec checks
+# This workflow will run on every push and pull request to the `infrastructure` folder
+
+name: Terraform Lint and Security Checks
+
+on:
+  push:
+    paths:
+      - 'infrastructure/**'
+  pull_request:
+    paths:
+      - 'infrastructure/**'
+
+jobs:
+  lint-and-security-checks:
+    name: Run tflint and tfsec
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up Terraform
+      uses: hashicorp/setup-terraform@v2
+      with:
+        terraform_version: latest
+
+    - name: Install tflint
+      run: |
+        curl -s https://raw.githubusercontent.com/terraform-linters/tflint/master/install_linux.sh | bash
+
+    - name: Run tflint
+      run: |
+        cd infrastructure
+        tflint
+
+    - name: tfsec
+      uses: aquasecurity/tfsec-action@v1.0.0
+      with: 
+        working_directory: infrastructure

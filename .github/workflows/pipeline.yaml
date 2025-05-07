@@ -1,0 +1,8 @@
+name: Validate Applications
+on: 
+  push:
+    branches:
+      - main
+
+jobs:
+ 

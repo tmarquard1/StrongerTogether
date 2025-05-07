@@ -12,15 +12,15 @@ on:
   #     - 'infrastructure/**'
 
 jobs:
-  lint-and-security-checks:
-    name: Run tflint and tfsec
+  lint-checks:
+    name: Run tflint 
     runs-on: ubuntu-latest
 
     steps:
     - name: Checkout code
       uses: actions/checkout@v3
 
-    - name: Set up Terraform
+    - name: Set up tofu
       uses: opentofu/setup-opentofu@v1
       with:
         terraform_version: latest
@@ -32,6 +32,20 @@ jobs:
       run: |
         cd infrastructure
         tflint
+
+  security-checks:
+
+    name: Run tfsec
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up tofu
+      uses: opentofu/setup-opentofu@v1
+      with:
+        terraform_version: latest
 
     - name: tfsec
       uses: aquasecurity/tfsec-action@v1.0.0

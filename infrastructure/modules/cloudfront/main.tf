@@ -4,6 +4,7 @@ resource "aws_s3_bucket" "origin_bucket" {
   lifecycle {
     prevent_destroy = false
   }
+  
 }
 
 resource "aws_s3_object" "upload_files" {
@@ -13,22 +14,6 @@ resource "aws_s3_object" "upload_files" {
   key    = each.value
   source = "${var.upload_directory}/${each.value}"
   etag = filemd5("${var.upload_directory}/${each.value}")
-}
-
-resource "aws_cloudfront_origin_access_identity" "cdn_identity" {
-  comment = "Origin Access Identity for CloudFront"
-}
-
-data "aws_iam_policy_document" "s3_policy" {
-  statement {
-    actions   = ["s3:GetObject"]
-    resources = ["${aws_s3_bucket.origin_bucket.arn}/*"]
-
-    principals {
-      type        = "AWS"
-      identifiers = [aws_cloudfront_origin_access_identity.cdn_identity.iam_arn]
-    }
-  }
 }
 
 resource "aws_s3_bucket_policy" "origin_bucket_policy" {
@@ -62,6 +47,31 @@ resource "aws_cloudfront_origin_access_control" "default" {
   signing_protocol                  = "sigv4"
 }
 
+
+resource "aws_cloudfront_function" "redirect_trailing_slash" {
+  name    = "redirect-trailing-slash"
+  runtime = "cloudfront-js-1.0"
+
+  code = <<-EOF
+    function handler(event) {
+        var request = event.request;
+        var uri = request.uri;
+
+        // If the URI does not end with a trailing slash and is not a file, redirect
+        if (!uri.endsWith('/') && !uri.includes('.')) {
+            return {
+                statusCode: 301,
+                statusDescription: 'Moved Permanently',
+                headers: {
+                    location: { value: uri + '/index.html' }
+                }
+            };
+        }
+
+        return request;
+    }
+  EOF
+}
 resource "aws_cloudfront_distribution" "cdn" {
   origin {
     domain_name = aws_s3_bucket.origin_bucket.bucket_regional_domain_name
@@ -71,7 +81,7 @@ resource "aws_cloudfront_distribution" "cdn" {
 
   enabled             = true
   is_ipv6_enabled     = true
-  comment             = "Some comment"
+  comment             = "CloudFront distribution for Next.js app"
   default_root_object = "index.html"
 
   default_cache_behavior {
@@ -93,8 +103,26 @@ resource "aws_cloudfront_distribution" "cdn" {
     compress = true
 
     min_ttl     = 0
-    default_ttl = 86400
-    max_ttl     = 31536000
+    default_ttl = 0
+    max_ttl     = 0
+
+    function_association {
+      event_type   = "viewer-request"
+      function_arn = aws_cloudfront_function.redirect_trailing_slash.arn
+    }
+
+  }
+
+  custom_error_response {
+    error_code         = 404
+    response_code      = 200
+    response_page_path = "/index.html"
+  }
+
+  custom_error_response {
+    error_code         = 403
+    response_code      = 200
+    response_page_path = "/index.html"
   }
 
   viewer_certificate {

@@ -1,14 +1,14 @@
 name: Deploy Applications
 
 on: 
-  push:
-    branches:
-      - main
-  workflow_run:
-    workflows:
-      - name: Tofu Lint and Security Checks
-    types:
-      - completed
+  # push:
+  #   branches:
+  #     - main
+  # workflow_run:
+  #   workflows:
+  #     - name: Tofu Lint and Security Checks
+  #   types:
+  #     - completed
   workflow_dispatch:
 
 jobs:

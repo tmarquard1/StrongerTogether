@@ -1,0 +1,28 @@
+name: Deploy Applications
+
+on: 
+  push:
+    branches:
+      - main
+  workflow_run:
+    workflows:
+      - name: Tofu Lint and Security Checks
+    types:
+      - completed
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: Deploy Application
+    runs-on: ubuntu-latest
+
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Deploy Application
+      run: |
+        echo "Deploying application..."
+        # Add your deployment commands here

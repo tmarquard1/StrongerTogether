@@ -31,7 +31,7 @@ resource "aws_s3_bucket_policy" "origin_bucket_policy" {
         Resource = "${aws_s3_bucket.origin_bucket.arn}/*",
         Condition = {
           StringEquals = {
-            "AWS:SourceArn" = "arn:aws:cloudfront:::distribution/${aws_cloudfront_distribution.cdn.id}"
+            "AWS:SourceArn" = "arn:aws:cloudfront::${var.account_id}:distribution/${aws_cloudfront_distribution.cdn.id}"
           }
         }
       }

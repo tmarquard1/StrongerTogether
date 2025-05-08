@@ -1,7 +1,7 @@
 # Add a GitHub Actions workflow for tflint and tfsec checks
 # This workflow will run on every push and pull request to the `infrastructure` folder
 
-name: Terraform Lint and Security Checks
+name: Tofu Lint and Security Checks
 
 on:
   push:

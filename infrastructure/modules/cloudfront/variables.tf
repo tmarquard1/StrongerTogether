@@ -10,3 +10,9 @@ variable "upload_directory" {
   default     = "../web_client/out"
   
 }
+
+variable "account_id" {
+  description = "The AWS account ID"
+  type        = string
+  
+}

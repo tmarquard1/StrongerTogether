@@ -1,4 +1,3 @@
-
 services:
   api:
     build:
@@ -9,6 +8,7 @@ services:
     volumes:
       - ./api:/app
     command: python3 app.py
+# docker exec -it db_service psql -U user -d stronger_together
   db:
     image: postgres:latest
     container_name: db_service
@@ -25,3 +25,22 @@ services:
     volumes:
       - ./StravaPythonClient:/output
     command: generate -i https://developers.strava.com/swagger/swagger.json -l python -o /output
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.2.4
+    container_name: keycloak_service
+    command: start-dev --import-realm
+    environment:
+      KC_DB: postgres
+      KC_DB_URL_HOST: db_service
+      KC_DB_URL_DATABASE: stronger_together
+      KC_DB_USERNAME: user
+      KC_DB_PASSWORD: password
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+    ports:
+      - "8080:8080"
+    depends_on:
+      - db
+    volumes:
+      - ./keycloak:/opt/keycloak/data/import

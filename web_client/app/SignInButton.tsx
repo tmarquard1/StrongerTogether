@@ -1,12 +1,19 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { signIn } from "next-auth/react";
 
 export default function SignInButton() {
-  const router = useRouter();
-
-  const handleSignIn = () => {
-    router.push("http://www.strava.com/oauth/authorize?client_id=156846&response_type=code&redirect_uri=http://localhost:8000/callback&approval_prompt=force&scope=read,profile:read_all,activity:read,activity:write");
+  const handleSignIn = async () => {
+    try {
+      const result = await signIn("keycloak"); // Initiates the Keycloak login flow via NextAuth
+      if (!result?.ok) {
+        console.error("Sign-in failed:", result?.error);
+        alert("Sign-in failed. Please try again.");
+      }
+    } catch (error) {
+      console.error("An error occurred during sign-in:", error);
+      alert("An unexpected error occurred. Please try again later.");
+    }
   };
 
   return (

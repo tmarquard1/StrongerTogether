@@ -1,22 +1,25 @@
 "use client";
 
-import { signIn, useSession } from "next-auth/react";
+import { UserManager, WebStorageStateStore } from "oidc-client-ts";
+import { getUserManager } from "./utils/oidc";
+
+const oidcConfig = {
+  authority: "http://localhost:8080/realms/talon", // Keycloak base URL for your realm
+  client_id: "talon",
+  redirect_uri: typeof window !== "undefined" ? window.location.origin + "/auth/callback" : "",
+  response_type: "code",
+  scope: "openid profile email",
+  post_logout_redirect_uri: typeof window !== "undefined" ? window.location.origin : "",
+  // Always set userStore to localStorage, only on client
+  userStore: typeof window !== "undefined" ? new WebStorageStateStore({ store: window.localStorage }) : undefined,
+};
 
 export default function SignInButton() {
-  const { data: session } = useSession();
 
   const handleSignIn = async () => {
-    try {
-      const result = await signIn("google"); // Initiates the Google login flow via NextAuth
-      if (!result?.ok) {
-        console.error("Sign-in failed:", result?.error);
-        alert("Sign-in failed. Please try again.");
-      } else {
-        console.log("Access Token:", session?.user.accessToken); // Log the accessToken
-      }
-    } catch (error) {
-      console.error("An error occurred during sign-in:", error);
-      alert("An unexpected error occurred. Please try again later.");
+    const userManager = getUserManager();
+    if (userManager) {
+      await userManager.signinRedirect();
     }
   };
 

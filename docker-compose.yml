@@ -2,12 +2,12 @@ services:
   api:
     build:
       context: ./api
-    container_name: api_service
+    container_name: api
     ports:
-      - "5000:5000"
+      - "8000:8000"
     volumes:
       - ./api:/app
-    command: python3 app.py
+    command: fastapi run
 # docker exec -it db_service psql -U user -d stronger_together
   db:
     image: postgres:latest

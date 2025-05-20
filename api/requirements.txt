@@ -7,3 +7,6 @@ urllib3 >= 1.15.1
 requests >= 2.32.3
 sqlalchemy >= 2.0.40
 psycopg2 >= 2.9.10
+python-jose
+requests
+authlib[client]

@@ -18,6 +18,21 @@ from database.connection import engine, get_db
 from database.models.activities import Base
 from database.models.activities import Activity, ActivityCreate, ActivityResponse
 from fastapi.middleware.cors import CORSMiddleware
+from jose import jwt
+from jose.exceptions import JWTError
+import requests
+from fastapi import Header, status
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from jose.utils import base64url_decode
+from cryptography.hazmat.primitives.asymmetric import rsa
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import serialization
+from authlib.jose import jwt as authlib_jwt, JoseError
+from authlib.jose import JsonWebKey
+from authlib.jose import JsonWebToken
+import json
+import base64
+
 
 # Load environment variables from .env file
 load_dotenv()
@@ -147,9 +162,61 @@ def authorize():
 
 
 ####################### Supporting the Web Client before fully implementing Strava API #######################
+# Keycloak JWKS URL
+KEYCLOAK_BASE_URL = "http://keycloak:8080/realms/talon"
+KEYCLOAK_DISCOVERY_URL = f"{KEYCLOAK_BASE_URL}/.well-known/openid-configuration"
+KEYCLOAK_AUDIENCE = None  # Set if you want to check audience
+
+oidc_config = requests.get(KEYCLOAK_DISCOVERY_URL).json()
+JWKS_URL = oidc_config["jwks_uri"]
+
+# Fetch and cache JWKS
+jwks = requests.get(JWKS_URL).json()
+jwt = JsonWebToken(["RS256"])
+
+ISSUER = oidc_config["issuer"]
+
+
+bearer_scheme = HTTPBearer()
+
+def get_jwt_header(token: str):
+    header_b64 = token.split('.')[0]
+    header_b64 += '=' * (-len(header_b64) % 4)
+    header_json = base64.urlsafe_b64decode(header_b64)
+    return json.loads(header_json)
+
+def verify_token(credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme)):
+    if credentials is None or credentials.credentials is None:
+        raise HTTPException(status_code=401, detail="Missing or invalid Authorization header")
+    token = credentials.credentials
+    try:
+        # Extract JWT header to get 'kid'
+        header = get_jwt_header(token)
+        kid = header.get("kid")
+        if not kid:
+            raise HTTPException(status_code=401, detail="No 'kid' found in token header")
+        key = next((k for k in jwks["keys"] if k["kid"] == kid), None)
+        if not key:
+            raise HTTPException(status_code=401, detail="Public key not found")
+        jwk = JsonWebKey.import_key(key)
+        claims = authlib_jwt.decode(
+            token,
+            jwk,
+            claims_params={
+                "iss": ISSUER,
+                "aud": KEYCLOAK_AUDIENCE
+            }
+        )
+        claims.validate()
+        return claims
+    except JoseError as e:
+        raise HTTPException(status_code=401, detail=f"Invalid token: {str(e)}")
+    except Exception as e:
+        raise HTTPException(status_code=401, detail=f"Token validation failed: {str(e)}")
+
 @app.post("/activity")
-def create_activity(activity: ActivityCreate, db: Session = Depends(get_db)) -> ActivityResponse:
-    """Create a new activity."""
+def create_activity(activity: ActivityCreate, db: Session = Depends(get_db), token_payload: dict = Depends(verify_token)) -> ActivityResponse:
+    """Create a new activity. Requires a valid Keycloak JWT token."""
     new_activity = Activity(
         name=activity.name,
         description=activity.description,

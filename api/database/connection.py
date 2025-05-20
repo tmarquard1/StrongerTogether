@@ -8,7 +8,7 @@ load_dotenv()
 
 # Retrieve database connection details from environment variables
 # DATABASE_URL = os.getenv("DATABASE_URL")
-DATABASE_URL="postgresql+psycopg2://user:password@host.docker.internal:5432/stronger_together"
+DATABASE_URL="postgresql+psycopg2://user:password@db:5432/stronger_together"
 
 if not DATABASE_URL:
     raise RuntimeError("DATABASE_URL environment variable is not set.")

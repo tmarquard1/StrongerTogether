@@ -3,19 +3,17 @@ import { useState } from "react";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import BASE_URL from "../utils/apiConfig";
-import { useSession } from "next-auth/react";
+import { getUserManager } from "../utils/oidc";
 
 export default function CreateEvent() {
-  const { data: session } = useSession();
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [timestamp, setTimestamp] = useState<Date | null>(new Date());
 
   const handleSave = async () => {
-    if (!session) {
-      alert("You must be signed in to create an event.");
-      return;
-    }
+    const userManager = getUserManager();
+    const user = userManager ? await userManager.getUser() : null;
+    const accessToken = user?.access_token;
 
     const eventData = { name, description, timestamp };
     try {
@@ -23,9 +21,8 @@ export default function CreateEvent() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          // Use the Google idToken (JWT) for backend authentication
-          Authorization: `Bearer ${session?.user.accessToken}`,
-        },
+          ...(accessToken && { Authorization: `Bearer ${accessToken}` }),
+        } as HeadersInit,
         body: JSON.stringify(eventData),
       });
       if (response.ok) {

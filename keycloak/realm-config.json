@@ -11,7 +11,9 @@
      "webOrigins": [
         "http://localhost:3000"
      ],
-      "protocol": "openid-connect"
+      "protocol": "openid-connect",
+      "publicClient": true
+
     }
   ],
   "users": [

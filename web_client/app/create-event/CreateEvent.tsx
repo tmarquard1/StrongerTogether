@@ -3,18 +3,29 @@ import { useState } from "react";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import BASE_URL from "../utils/apiConfig";
+import { useSession } from "next-auth/react";
 
 export default function CreateEvent() {
+  const { data: session } = useSession();
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [timestamp, setTimestamp] = useState<Date | null>(new Date());
 
   const handleSave = async () => {
+    if (!session) {
+      alert("You must be signed in to create an event.");
+      return;
+    }
+
     const eventData = { name, description, timestamp };
     try {
       const response = await fetch(`${BASE_URL}/activity`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          // Use the Google idToken (JWT) for backend authentication
+          Authorization: `Bearer ${session?.user.accessToken}`,
+        },
         body: JSON.stringify(eventData),
       });
       if (response.ok) {

@@ -3,13 +3,15 @@
   "enabled": true,
   "clients": [
     {
-      "clientId": "oidc-client",
+      "clientId": "talon",
       "enabled": true,
       "redirectUris": [
-        "http://localhost:5173/*"
+        "http://localhost:3000/*"
       ],
-      "protocol": "openid-connect",
-      "publicClient": true
+     "webOrigins": [
+        "http://localhost:3000"
+     ],
+      "protocol": "openid-connect"
     }
   ],
   "users": [

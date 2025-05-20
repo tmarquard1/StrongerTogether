@@ -44,3 +44,22 @@ services:
       - db
     volumes:
       - ./keycloak:/opt/keycloak/data/import
+  
+  client:
+    build:
+      context: ./web_client
+      target: builder
+    container_name: client
+    ports:
+      - "3000:3000"
+    # volumes:
+    #   - ./client:/app
+    command: npm run dev
+  prod_client:
+    build:
+      context: ./web_client
+      target: production
+    container_name: prod_client
+    ports:
+      - "3000:3000"
+   

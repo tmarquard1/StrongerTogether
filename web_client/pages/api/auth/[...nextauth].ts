@@ -1,24 +1,11 @@
-import NextAuth, { SessionStrategy } from "next-auth";
-import KeycloakProvider from "next-auth/providers/keycloak";
+import NextAuth from "next-auth";
+import GoogleProvider from 'next-auth/providers/google'
 
-export const authOptions = {
+export default NextAuth({
   providers: [
-    KeycloakProvider({
-      clientId: process.env.KEYCLOAK_CLIENT_ID || "talon-client",
-      clientSecret: process.env.KEYCLOAK_CLIENT_SECRET || "talon-secret",
-      issuer: process.env.KEYCLOAK_ISSUER || "http://localhost:8080/realms/talon", // Ensure this points to the correct Keycloak domain
-      authorization: {
-        params: {
-          scope: "openid profile email", // Ensure the required scopes are included
-        },
-      },
+    GoogleProvider({
+      clientId: process.env.GOOGLE_CLIENT_ID || "",
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
     }),
   ],
-  secret: process.env.NEXTAUTH_SECRET || "talon-nextauth-secret",
-  session: {
-    strategy: "jwt" as SessionStrategy, // Use JWT for session handling
-  },
-};
-
-// Ensure NextAuth is exported as the default function
-export default NextAuth(authOptions);
+});

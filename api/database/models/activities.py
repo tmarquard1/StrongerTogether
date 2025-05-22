@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from sqlalchemy import Column, Integer, String, Text, DateTime
+from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
 from datetime import datetime, timezone
 
@@ -13,6 +13,7 @@ class Activity(Base):
     name = Column(String(255), nullable=False)
     description = Column(Text, nullable=True)
     timestamp = Column(DateTime, default=datetime.now(timezone.utc), nullable=False)
+    user_username = Column(String, ForeignKey('users.username'), nullable=False)
 
 # Pydantic Model
 class ActivityCreate(BaseModel):

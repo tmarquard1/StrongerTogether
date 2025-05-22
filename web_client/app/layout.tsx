@@ -39,6 +39,11 @@ export default function RootLayout({
                 Create Event
               </button>
             </Link>
+            <Link href="/training-analyzer">
+              <button className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600">
+                Training Analyzer
+              </button>
+            </Link>
             <SignInButton />
           </div>
         </header>

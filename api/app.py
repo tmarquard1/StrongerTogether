@@ -217,10 +217,12 @@ def verify_token(credentials: HTTPAuthorizationCredentials = Depends(bearer_sche
 @app.post("/activity")
 def create_activity(activity: ActivityCreate, db: Session = Depends(get_db), token_payload: dict = Depends(verify_token)) -> ActivityResponse:
     """Create a new activity. Requires a valid Keycloak JWT token."""
+    username = token_payload.get("preferred_username")
     new_activity = Activity(
         name=activity.name,
         description=activity.description,
         timestamp=activity.timestamp or datetime.now(timezone.utc),
+        user_username=username
     )
     db.add(new_activity)
     db.commit()
